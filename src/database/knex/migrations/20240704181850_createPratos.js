@@ -7,6 +7,14 @@ exports.up = (knex) =>
       .inTable("users")
       .onDelete("CASCADE"); // pega o id do usuário que criou a nota
 
+    table
+      .enum("category", ["bebida", "sobremesa", "refeição"], {
+        useNative: true,
+        enumName: "category",
+      })
+      .notNullable()
+      .default("bebida");
+
     table.text("name").notNullable();
     table.decimal("value", 10, 2).notNullable();
     table.text("imageUrl").notNullable();

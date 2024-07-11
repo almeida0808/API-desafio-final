@@ -6,10 +6,12 @@ const database = require("./database/sqlite");
 const express = require("express");
 const routes = require("./routes");
 
+const cors = require("cors");
 const app = express();
 
 app.use(express.json()); // faz com que toda request seja enviada como json(
 app.use(routes); // indica onde as rotas estão separadas
+app.use(cors());
 
 app.use((error, request, response, next) => {
   if (error instanceof AppError) {

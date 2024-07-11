@@ -61,9 +61,9 @@ class PratosController {
   }
 
   async index(request, response) {
-    const { category } = request.query;
+    const { name } = request.query;
 
-    const pratos = await knex("pratos").orderBy("name");
+    const pratos = await knex("pratos").where({ name }).orderBy("name");
 
     return response.json({ pratos });
   }

@@ -5,7 +5,7 @@ class PratosController {
   async create(request, response) {
     const { name, value, imageUrl, description, ingredientes, category } =
       request.body;
-    const { user_id } = request.params;
+    const user_id = request.user.id;
 
     const user = await knex("users").where({ id: user_id }).first();
     if (!user) {
@@ -62,6 +62,7 @@ class PratosController {
 
   async index(request, response) {
     const { name } = request.query;
+    const user_id = request.user.id;
 
     const pratos = await knex("pratos").where({ name }).orderBy("name");
 

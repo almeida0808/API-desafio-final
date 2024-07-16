@@ -1,47 +1,69 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
+const DiskStorage = require("../providers/DiskStorage"); // Importe a classe DiskStorage aqui
 
 class PratosController {
   async create(request, response) {
-    const { name, value, imageUrl, description, ingredientes, category } =
-      request.body;
-    const user_id = request.user.id;
+    try {
+      const { name, category, value, description, ingredientes } = request.body;
+      const image = request.file.filename;
 
-    const user = await knex("users").where({ id: user_id }).first();
-    if (!user) {
-      throw new AppError("usuário invalido");
-    }
+      const user_id = request.user.id;
 
-    if (user.role !== "admin") {
-      throw new AppError("Você não possui permissão");
-    }
+      const user = await knex("users").where({ id: user_id }).first();
 
-    if (isNaN(value)) {
-      throw new AppError("Digite um valor valído");
-    }
+      if (!user) {
+        throw new AppError("Usuário inválido");
+      }
 
-    const formatValue = (value) => {
-      return parseFloat(value.replace(",", ".")).toFixed(2);
-    };
-    const [prato_id] = await knex("pratos").insert({
-      user_id,
-      name,
-      value: formatValue(value),
-      imageUrl,
-      description,
-      category,
-    });
+      if (user.role !== "admin") {
+        throw new AppError("Você não possui permissão");
+      }
 
-    const ingredientesInsert = ingredientes.map((name) => {
-      return {
-        prato_id,
+      const formatValue = parseFloat(value.replace(",", "."));
+      if (isNaN(formatValue)) {
+        throw new AppError("Digite um valor válido");
+      }
+
+      // Verifique se há um arquivo enviado
+      if (!request.file) {
+        throw new AppError("Por favor, envie uma imagem");
+      }
+
+      // Salvar a imagem no DiskStorage
+      const diskStorage = new DiskStorage();
+      const imageUrl = await diskStorage.saveFile(image);
+
+      // Inserir o prato no banco de dados com a URL da imagem
+      const [prato_id] = await knex("pratos").insert({
+        user_id,
         name,
-      };
-    });
+        value: formatValue.toFixed(2),
+        description,
+        category,
+        imageUrl, // Usando a URL da imagem aqui
+      });
 
-    await knex("ingredientes").insert(ingredientesInsert);
+      // Tratar os ingredientes
+      const ingredientesArray = ingredientes.split(",").map((name) => ({
+        prato_id,
+        name: name.trim(),
+      }));
 
-    response.status(201).json("Prato criado com sucesso");
+      await knex("ingredientes").insert(ingredientesArray);
+
+      response.status(201).json("Prato criado com sucesso");
+    } catch (error) {
+      console.error(error);
+
+      // Se o erro for uma instância de AppError, envie a mensagem do erro com o status apropriado
+      if (error instanceof AppError) {
+        return response.status(400).json({ message: error.message });
+      }
+
+      // Caso contrário, envie um erro interno do servidor
+      return response.status(500).json({ message: "Erro interno do servidor" });
+    }
   }
 
   async show(request, response) {

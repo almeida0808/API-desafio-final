@@ -1,16 +1,18 @@
-const fs = require("fs");
-const path = require("path");
-const uploadConfig = require("../configs/upload");
+const fs = require("fs"); // fs do propio node lida com manipulação de arquivos
+const path = require("path"); // navega entre os diretorios
+const uploadConfig = require("../configs/upload"); // configurações de upload
 
 class DiskStorage {
   async saveFile(file) {
+    // salva o arquivo que foi passado como parametro
     await fs.promises.rename(
       // FUNÇÃO RENAME RECEBE DOIS PARAMETROS:
-      path.resolve(uploadConfig.TMP_FOLDER, file), // AONDE O ARQUIVO ESTÁ E AONDEU EU QUERO LEVAR O ARQUIVO.
+
+      path.resolve(uploadConfig.TMP_FOLDER, file), // AONDE O ARQUIVO ESTÁ E AONDE EU QUERO LEVAR O ARQUIVO
       path.resolve(uploadConfig.UPLOADS_FOLDER, file)
     );
 
-    return file;
+    return file; // retorna qual arquivo foi salvo
   }
 
   async deleteFile(file) {
@@ -22,7 +24,7 @@ class DiskStorage {
       return;
     }
 
-    await fs.promises.unlink(filePath);
+    await fs.promises.unlink(filePath); // unlink deleta o arquivo
   }
 }
 

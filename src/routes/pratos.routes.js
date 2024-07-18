@@ -11,7 +11,7 @@ const upload = multer(uploadConfig.MULTER);
 
 pratosRoutes.post("/:user_id", upload.single("image"), pratosController.create); // quando acessar a raiz do /users e fizer uma requisição no metodo post, ele vai realizar a função que for colocado depois da virgula(ainda não criamos a função)
 pratosRoutes.get("/:id", pratosController.show);
-pratosRoutes.put("/:prato_id", pratosController.update);
+pratosRoutes.put("/:prato_id", upload.single("image"), pratosController.update);
 pratosRoutes.delete("/:id", pratosController.delete);
 pratosRoutes.get("/", pratosController.index);
 pratosRoutes.patch("/img-food", upload.single("image"), (req, res) => {

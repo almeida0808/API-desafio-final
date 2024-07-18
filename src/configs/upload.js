@@ -2,18 +2,20 @@ const path = require("path");
 const multer = require("multer");
 const crypto = require("crypto");
 
-const TMP_FOLDER = path.resolve(__dirname, "..", "..", "tmp");
-const UPLOADS_FOLDER = path.resolve(TMP_FOLDER, "uploads");
+const TMP_FOLDER = path.resolve(__dirname, "..", "..", "tmp"); // salva o caminho da pasta temporaria onde as imagens vão ficar assim que são enviadas
+const UPLOADS_FOLDER = path.resolve(TMP_FOLDER, "uploads"); // pasta onde as imagens vão ser realmente salvas
 
 const MULTER = {
   storage: multer.diskStorage({
-    destination: TMP_FOLDER, // informa aonde a imagem vai ficar
-    filename(request, file, callback) {
-      // cria um nome cryptografado pra não coorrer risco de ter imagens com mesmo nome
-      const fileHash = crypto.randomBytes(10).toString("hex");
-      const fileName = `${fileHash}-${file.originalname}`;
+    destination: TMP_FOLDER, // informa aonde a imagem vai ficar temporariamente
 
-      return callback(null, fileName);
+    filename(request, file, callback) {
+      // função que define o nome do arquivo
+
+      const fileHash = crypto.randomBytes(10).toString("hex"); // cria um nome cryptografado
+      const fileName = `${fileHash}-${file.originalname}`; // junta o nome cryptografado com o nome original do arquivo
+
+      return callback(null, fileName); // retorna o nome do arquivo ja com a cryptografia
     },
   }),
 };

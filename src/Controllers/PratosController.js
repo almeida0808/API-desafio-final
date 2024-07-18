@@ -1,41 +1,44 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
 const DiskStorage = require("../providers/DiskStorage"); // Importe a classe DiskStorage aqui
+const diskStorage = new DiskStorage(); // instancia DiskStorage
 
 class PratosController {
   async create(request, response) {
     try {
-      const { name, category, value, description, ingredientes } = request.body;
-      const image = request.file.filename;
+      // dentro do insomnia nos fazmos uma requisição usando o metodo multpart no body
+      const { name, category, value, description, ingredientes } = request.body; // pega os dados de texto pelo body normal
+      const image = request.file.filename; // quando vc vai pegar um arquivo de uma requisição , vc sempre vai digitar request.file.nomeDoCampo nesse caso o nome do campo é filename
 
-      const user_id = request.user.id;
+      const user_id = request.user.id; // pega o id do usuário
 
-      const user = await knex("users").where({ id: user_id }).first();
+      const user = await knex("users").where({ id: user_id }).first(); // busca pelo usuário pelo id
 
       if (!user) {
         throw new AppError("Usuário inválido");
       }
 
       if (user.role !== "admin") {
+        // se o usuário não for adm:
         throw new AppError("Você não possui permissão");
       }
 
-      const formatValue = parseFloat(value.replace(",", "."));
+      const formatValue = parseFloat(value.replace(",", ".")); // caso o usuário passe um valor usando , ele substitui pra .
+
       if (isNaN(formatValue)) {
+        // se o valor formatado n for do tipo Number, retorna esse erro
         throw new AppError("Digite um valor válido");
       }
 
       // Verifique se há um arquivo enviado
       if (!request.file) {
-        throw new AppError("Por favor, envie uma imagem");
+        throw new AppError("Por favor, adicione uma imagem");
       }
 
-      // Salvar a imagem no DiskStorage
-      const diskStorage = new DiskStorage();
-      const imageUrl = await diskStorage.saveFile(image);
+      const imageUrl = await diskStorage.saveFile(image); // salva a foto e guarda o nome do arquivo na const imageUrl
 
-      // Inserir o prato no banco de dados com a URL da imagem
       const [prato_id] = await knex("pratos").insert({
+        // Inseri todos os dados no database , e guarda o id do prato nessa const
         user_id,
         name,
         value: formatValue.toFixed(2),
@@ -44,20 +47,21 @@ class PratosController {
         imageUrl, // Usando a URL da imagem aqui
       });
 
-      // Tratar os ingredientes
+      // na requisição os ingredientes vem da seguinte maneira = "alho, sal, pimenta" ele basicamente cria um array separando cada ingrediente usando a virgula como parametro e então faz um map criando um objeto que contenha o id do prato e o nome pra cada ingrediente
       const ingredientesArray = ingredientes.split(",").map((name) => ({
         prato_id,
         name: name.trim(),
       }));
 
-      await knex("ingredientes").insert(ingredientesArray);
+      await knex("ingredientes").insert(ingredientesArray); // inseri os cada ingrediente dentro tabela de ingredientes
 
       response.status(201).json("Prato criado com sucesso");
     } catch (error) {
+      // caso de algum ero ele cai aqui
       console.error(error);
 
-      // Se o erro for uma instância de AppError, envie a mensagem do erro com o status apropriado
       if (error instanceof AppError) {
+        // se for um erro do lado do cliente
         return response.status(400).json({ message: error.message });
       }
 
@@ -92,49 +96,47 @@ class PratosController {
   }
 
   async update(request, response) {
-    const { name, value, imageUrl, description, ingredientes, category } =
-      request.body;
+    const { name, category, value, description, ingredientes } = request.body; // pega os dados de texto pelo body normal
 
+    const image = request.file.filename;
     const { prato_id } = request.params;
     const prato = await knex("pratos").where({ id: prato_id }).first();
-    console.log({ prato, name });
+    console.log({ prato, name, image });
+    if (image) {
+      if (prato.imageUrl) {
+        await diskStorage.deleteFile(prato.imageUrl);
+      }
+      const imageUrl = diskStorage.saveFile(image);
 
-    if (prato) {
-      if (name) {
-        prato.name = name;
-      }
-      if (description) {
-        prato.description = description;
-      }
-      if (value) {
-        const formatValue = (value) => {
-          return parseFloat(value.replace(",", ".")).toFixed(2);
-        };
-        prato.value = formatValue(value);
-      }
-      if (imageUrl) {
-        prato.imageUrl = imageUrl;
-      }
-      if (category) {
-        prato.category = category;
-      }
-      if (ingredientes) {
-        const ingredientesInsert = ingredientes.map((name) => {
-          return {
-            prato_id,
-            name,
-          };
-        });
-
-        await knex("ingredientes").update(ingredientesInsert).where({
-          id: prato_id,
-        });
-      }
-      await knex("pratos").update(prato).where({ id: prato_id });
-      response.status(201).json(`Prato atualizado`);
-    } else {
-      throw new AppError("Não foi possivel encontrar este prato");
+      prato.imageUrl = imageUrl;
     }
+    if (name) {
+      prato.name = name;
+    }
+    if (value) {
+      prato.value = value;
+    }
+    if (description) {
+      prato.description = description;
+    }
+    if (ingredientes) {
+      const ingredientesInsert = ingredientes.split(",").map((name) => {
+        return {
+          prato_id,
+          name: name.trim(),
+        };
+      });
+
+      await knex("ingredientes").update(ingredientesInsert).where({
+        id: prato_id,
+      });
+    }
+    if (category) {
+      prato.category = category;
+    }
+
+    await knex("pratos").update(prato).where({ id: prato_id });
+    response.status(201).json(`Prato atualizado`);
   }
 
   async delete(request, response) {

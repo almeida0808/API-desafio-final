@@ -9,9 +9,9 @@ const routes = require("./routes");
 const cors = require("cors");
 const app = express();
 
+app.use(cors());
 app.use(express.json()); // faz com que toda request seja enviada como json(
 app.use(routes); // indica onde as rotas estão separadas
-app.use(cors());
 
 app.use((error, request, response, next) => {
   if (error instanceof AppError) {
@@ -29,5 +29,5 @@ app.use((error, request, response, next) => {
 
 database();
 
-const PORT = 1717;
+const PORT = 3333;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

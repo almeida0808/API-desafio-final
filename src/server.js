@@ -29,5 +29,5 @@ app.use((error, request, response, next) => {
 
 database();
 
-const PORT = 3333;
+const PORT = 2211;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

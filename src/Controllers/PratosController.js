@@ -8,7 +8,8 @@ class PratosController {
     try {
       // dentro do insomnia nos fazmos uma requisição usando o metodo multpart no body
       const { name, category, value, description, ingredientes } = request.body; // pega os dados de texto pelo body normal
-      const image = request.file.filename; // quando vc vai pegar um arquivo de uma requisição , vc sempre vai digitar request.file.nomeDoCampo nesse caso o nome do campo é filename
+      // const image = request.file.filename; // quando vc vai pegar um arquivo de uma requisição , vc sempre vai digitar request.file.nomeDoCampo nesse caso o nome do campo é filename
+      console.log(typeof value);
 
       const user_id = request.user.id; // pega o id do usuário
 
@@ -23,7 +24,8 @@ class PratosController {
         throw new AppError("Você não possui permissão");
       }
 
-      const formatValue = parseFloat(value.replace(",", ".")); // caso o usuário passe um valor usando , ele substitui pra .
+      const formatValue = Number(value); // caso o usuário passe um valor usando , ele substitui pra .
+      console.log(formatValue);
 
       if (isNaN(formatValue)) {
         // se o valor formatado n for do tipo Number, retorna esse erro
@@ -31,11 +33,11 @@ class PratosController {
       }
 
       // Verifique se há um arquivo enviado
-      if (!request.file) {
-        throw new AppError("Por favor, adicione uma imagem");
-      }
+      // if (!request.file) {
+      //   throw new AppError("Por favor, adicione uma imagem");
+      // }
 
-      const imageUrl = await diskStorage.saveFile(image); // salva a foto e guarda o nome do arquivo na const imageUrl
+      // const imageUrl = await diskStorage.saveFile(image); // salva a foto e guarda o nome do arquivo na const imageUrl
 
       const [prato_id] = await knex("pratos").insert({
         // Inseri todos os dados no database , e guarda o id do prato nessa const
@@ -44,14 +46,24 @@ class PratosController {
         value: formatValue.toFixed(2),
         description,
         category,
-        imageUrl, // Usando a URL da imagem aqui
+        imageUrl: "2d70c93c108c0589057e-11491214.jpg",
       });
 
       // na requisição os ingredientes vem da seguinte maneira = "alho, sal, pimenta" ele basicamente cria um array separando cada ingrediente usando a virgula como parametro e então faz um map criando um objeto que contenha o id do prato e o nome pra cada ingrediente
-      const ingredientesArray = ingredientes.split(",").map((name) => ({
-        prato_id,
-        name: name.trim(),
-      }));
+      let ingredientesArray = [];
+      if (typeof ingredientes === "string") {
+        ingredientesArray = ingredientes.split(",").map((name) => ({
+          prato_id,
+          name: name.trim(),
+        }));
+      } else if (Array.isArray(ingredientes)) {
+        ingredientesArray = ingredientes.map((name) => ({
+          prato_id,
+          name: name,
+        }));
+      } else {
+        throw new AppError("Formato de ingredientes inválido");
+      }
 
       await knex("ingredientes").insert(ingredientesArray); // inseri os cada ingrediente dentro tabela de ingredientes
 

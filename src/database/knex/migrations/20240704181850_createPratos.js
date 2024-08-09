@@ -16,7 +16,8 @@ exports.up = (knex) =>
       .default("bebida");
 
     table.text("name").notNullable();
-    table.decimal("value", 10, 2).notNullable();
+    table.text("value").notNullable();
+
     table.text("imageUrl").notNullable();
     table.text("description").notNullable();
 

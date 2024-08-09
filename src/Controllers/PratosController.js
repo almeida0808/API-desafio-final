@@ -6,14 +6,11 @@ const diskStorage = new DiskStorage(); // instancia DiskStorage
 class PratosController {
   async create(request, response) {
     try {
-      // dentro do insomnia nos fazmos uma requisição usando o metodo multpart no body
-      const { name, category, value, description, ingredientes } = request.body; // pega os dados de texto pelo body normal
-      // const image = request.file.filename; // quando vc vai pegar um arquivo de uma requisição , vc sempre vai digitar request.file.nomeDoCampo nesse caso o nome do campo é filename
-      console.log(typeof value);
+      const { name, category, value, description, ingredientes } = request.body; // pega os dados de
+      const image = request.file.filename;
+      const user_id = request.user.id;
 
-      const user_id = request.user.id; // pega o id do usuário
-
-      const user = await knex("users").where({ id: user_id }).first(); // busca pelo usuário pelo id
+      const user = await knex("users").where({ id: user_id }).first();
 
       if (!user) {
         throw new AppError("Usuário inválido");
@@ -23,54 +20,50 @@ class PratosController {
         // se o usuário não for adm:
         throw new AppError("Você não possui permissão");
       }
+      // Processamento do valor
+      const formatValue = parseFloat(value.replace(",", ".")).toFixed(2);
 
-      const formatValue = Number(value); // caso o usuário passe um valor usando , ele substitui pra .
-      console.log(formatValue);
-
+      // Verifica se o valor convertido é um número válido
       if (isNaN(formatValue)) {
-        // se o valor formatado n for do tipo Number, retorna esse erro
         throw new AppError("Digite um valor válido");
       }
 
-      // Verifique se há um arquivo enviado
-      // if (!request.file) {
-      //   throw new AppError("Por favor, adicione uma imagem");
-      // }
-
-      // const imageUrl = await diskStorage.saveFile(image); // salva a foto e guarda o nome do arquivo na const imageUrl
+      const imageUrl = await diskStorage.saveFile(image); // salva a foto e guarda o nome do arquivo na const imageUrl
 
       const [prato_id] = await knex("pratos").insert({
         // Inseri todos os dados no database , e guarda o id do prato nessa const
         user_id,
         name,
-        value: formatValue.toFixed(2),
+        value: formatValue,
         description,
         category,
-        imageUrl: "2d70c93c108c0589057e-11491214.jpg",
+        imageUrl,
       });
-
-      // na requisição os ingredientes vem da seguinte maneira = "alho, sal, pimenta" ele basicamente cria um array separando cada ingrediente usando a virgula como parametro e então faz um map criando um objeto que contenha o id do prato e o nome pra cada ingrediente
       let ingredientesArray = [];
+
       if (typeof ingredientes === "string") {
+        // Supondo que a string é uma lista de ingredientes separados por vírgulas
         ingredientesArray = ingredientes.split(",").map((name) => ({
           prato_id,
-          name: name.trim(),
+          name: name.trim(), // Remove espaços extras
         }));
       } else if (Array.isArray(ingredientes)) {
+        // Se for um array, mapeia os ingredientes como objetos
         ingredientesArray = ingredientes.map((name) => ({
           prato_id,
-          name: name,
+          name: name.trim(), // Remove espaços extras
         }));
       } else {
         throw new AppError("Formato de ingredientes inválido");
       }
 
-      await knex("ingredientes").insert(ingredientesArray); // inseri os cada ingrediente dentro tabela de ingredientes
+      // Insere cada ingrediente na tabela "ingredientes"
+      await knex("ingredientes").insert(ingredientesArray);
 
       response.status(201).json("Prato criado com sucesso");
     } catch (error) {
       // caso de algum ero ele cai aqui
-      console.error(error);
+      console.error(error.message);
 
       if (error instanceof AppError) {
         // se for um erro do lado do cliente

@@ -9,6 +9,10 @@ const routes = require("./routes");
 const cors = require("cors");
 const app = express();
 
+const uploadConfig = require("./configs/upload");
+
+app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER));
+
 app.use(cors());
 app.use(express.json()); // faz com que toda request seja enviada como json(
 app.use(routes); // indica onde as rotas estão separadas

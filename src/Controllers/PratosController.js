@@ -90,12 +90,46 @@ class PratosController {
       return response.json({ ...note, ingredientes });
     }
   }
-
   async index(request, response) {
-    const { name } = request.query;
-    const user_id = request.user.id;
+    const { name, ingredientes } = request.query;
 
-    const pratos = await knex("pratos").where({ name }).orderBy("name");
+    let pratos;
+    pratos = await knex("pratos")
+      .whereLike("name", `%${name}%`)
+      .orderBy("name");
+
+    // pratos = await knex("pratos")
+    //   .select([
+    //     "pratos.name",
+    //     "pratos.value",
+    //     "pratos.category",
+    //     "pratos.imageUrl",
+    //     "pratos.description",
+    //   ])
+    //   .whereLike("pratos.name", `%${name}%`);
+
+    // if (ingredientes) {
+    //   const filterIngredientes = ingredientes
+    //     .split(",")
+    //     .map((ingrediente) => ingrediente.trim());
+
+    //   pratos = await knex("ingredients")
+    //     .select([
+    //       "pratos.name",
+    //       "pratos.value",
+    //       "pratos.category",
+    //       "pratos.imageUrl",
+    //       "pratos.description",
+    //     ])
+    //     .whereLike("pratos.name", `%${name}%`)
+    // .whereIn("name", filterIngredientes)
+    //     .innerJoin("pratos", "pratos.id", "ingredientes.prato_id")
+    //     .orderBy("name");
+    // } else {
+    //   pratos = (await knex("pratos"))
+    //     .whereLike("name", `%${name}%`)
+    //     .orderBy("name");
+    // }
 
     return response.json({ pratos });
   }

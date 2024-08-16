@@ -78,16 +78,16 @@ class PratosController {
   async show(request, response) {
     const { id } = request.params;
 
-    const note = await knex("pratos").where({ id }).first();
-
-    if (!note) {
+    const prato = await knex("pratos").where({ id }).first();
+    console.log(prato);
+    if (!prato) {
       throw new AppError("Prato não encontrada");
     } else {
       const ingredientes = await knex("ingredientes")
         .where({ prato_id: id })
         .orderBy("name");
 
-      return response.json({ ...note, ingredientes });
+      return response.json({ ...prato, ingredientes });
     }
   }
   async index(request, response) {

@@ -135,59 +135,47 @@ class PratosController {
   }
 
   async update(request, response) {
-    const { name, category, value, description, ingredientes } = request.body; // pega os dados de texto pelo body normal
-    const image = request.file.filename; // pega a imagem
+    const { name, category, value, description, ingredientes } = request.body;
+    const image = request.file ? request.file.filename : null; // Verifica se há uma nova imagem
     const { prato_id } = request.params;
 
-    const prato = await knex("pratos").where({ id: prato_id }).first(); // busca o prato que esta sendo editado
+    const prato = await knex("pratos").where({ id: prato_id }).first(); // Busca o prato
+
+    if (!prato) {
+      return response.status(404).json({ message: "Prato não encontrado" });
+    }
 
     if (image) {
-      await diskStorage.deleteFile(prato.imageUrl); // exclua a antiga imagem
-
-      const imageUrl = await diskStorage.saveFile(image); // salva a imagem nos arquivos e guarda o nome do arquivo na const imageUrl
-
-      prato.imageUrl = imageUrl; // troca o nome da imagem no banco de dados
+      // Se houver uma nova imagem, exclui a antiga e salva a nova
+      await diskStorage.deleteFile(prato.imageUrl);
+      const imageUrl = await diskStorage.saveFile(image);
+      prato.imageUrl = imageUrl;
     }
 
     if (ingredientes) {
-      await knex("ingredientes").where({ prato_id }).delete(); // deleta os ingredientes antigos
-
-      const ingredientes = "vazo, leite,peira";
-
-      const ingredientesArray = ingredientes // pela requisição os itens vem assim: vazo, leite, peira
-        .split(",") // transforma em ["vazo", " leite", "peira"]
-        .map((ingrediente) => ingrediente.trim()); // remove os espaços: ["vazo", "leite", "peira"]
-
-      const ingredientesInsert = ingredientesArray.map((name) => {
-        return {
-          prato_id,
-          name: name.trim(),
-        };
-      });
-
-      await knex("ingredientes").insert(ingredientesInsert).where({ prato_id });
+      await knex("ingredientes").where({ prato_id }).delete();
+      const ingredientesArray = ingredientes
+        .split(",")
+        .map((ingrediente) => ingrediente.trim());
+      const ingredientesInsert = ingredientesArray.map((name) => ({
+        prato_id,
+        name,
+      }));
+      await knex("ingredientes").insert(ingredientesInsert);
     }
 
-    if (name) {
-      prato.name = name;
-    }
-    if (value) {
-      prato.value = value;
-    }
-    if (description) {
-      prato.description = description;
-    }
-
-    if (category) {
-      prato.category = category;
-    }
-
-    console.log("PRato noovo", { prato });
+    // Atualiza os demais campos
+    if (name) prato.name = name;
+    if (value) prato.value = value;
+    if (description) prato.description = description;
+    if (category) prato.category = category;
 
     await knex("pratos").update(prato).where({ id: prato_id });
-    return response.status(201).json(`Prato atualizado`);
-  }
 
+    return response
+      .status(200)
+      .json({ message: "Prato atualizado com sucesso" });
+  }
   async delete(request, response) {
     const { id } = request.params;
 

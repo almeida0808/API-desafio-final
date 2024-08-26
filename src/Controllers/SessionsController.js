@@ -9,16 +9,13 @@ class SessionsController {
   async create(request, response) {
     const { email, password } = request.body;
 
-    const user = await knex("users").where({ email }).first(); // busca o usuário usando o email que foi passado
+    const user = await knex("users").where({ email }).first();
 
     if (!user) {
-      // se o usuário não for encontrado da esse erro
       throw new AppError("Email e/ou senha inválidos");
     }
-    // caso o user exista
-    const passwordCorrect = await compare(password, user.password); // compara a senha informada com a senha do usuário que está no database
+    const passwordCorrect = await compare(password, user.password);
     if (!passwordCorrect) {
-      // caso a senha esteja incorreta
       throw new AppError("Email e/ou senha inválidos");
     }
 

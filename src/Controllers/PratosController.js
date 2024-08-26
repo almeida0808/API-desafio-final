@@ -1,12 +1,11 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
-const DiskStorage = require("../providers/DiskStorage"); // Importe a classe DiskStorage aqui
-const diskStorage = new DiskStorage(); // instancia DiskStorage
-
+const DiskStorage = require("../providers/DiskStorage");
+const diskStorage = new DiskStorage();
 class PratosController {
   async create(request, response) {
     try {
-      const { name, category, value, description, ingredientes } = request.body; // pega os dados de
+      const { name, category, value, description, ingredientes } = request.body;
       const image = request.file.filename;
       const user_id = request.user.id;
 
@@ -17,21 +16,17 @@ class PratosController {
       }
 
       if (user.role !== "admin") {
-        // se o usuário não for adm:
         throw new AppError("Você não possui permissão");
       }
-      // Processamento do valor
       const formatValue = parseFloat(value.replace(",", ".")).toFixed(2);
 
-      // Verifica se o valor convertido é um número válido
       if (isNaN(formatValue)) {
         throw new AppError("Digite um valor válido");
       }
 
-      const imageUrl = await diskStorage.saveFile(image); // salva a foto e guarda o nome do arquivo na const imageUrl
+      const imageUrl = await diskStorage.saveFile(image);
 
       const [prato_id] = await knex("pratos").insert({
-        // Inseri todos os dados no database , e guarda o id do prato nessa const
         user_id,
         name,
         value: formatValue,
@@ -42,35 +37,29 @@ class PratosController {
       let ingredientesArray = [];
 
       if (typeof ingredientes === "string") {
-        // Supondo que a string é uma lista de ingredientes separados por vírgulas
         ingredientesArray = ingredientes.split(",").map((name) => ({
           prato_id,
-          name: name.trim(), // Remove espaços extras
+          name: name.trim(),
         }));
       } else if (Array.isArray(ingredientes)) {
-        // Se for um array, mapeia os ingredientes como objetos
         ingredientesArray = ingredientes.map((name) => ({
           prato_id,
-          name: name.trim(), // Remove espaços extras
+          name: name.trim(),
         }));
       } else {
         throw new AppError("Formato de ingredientes inválido");
       }
 
-      // Insere cada ingrediente na tabela "ingredientes"
       await knex("ingredientes").insert(ingredientesArray);
 
       response.status(201).json("Prato criado com sucesso");
     } catch (error) {
-      // caso de algum ero ele cai aqui
       console.error(error.message);
 
       if (error instanceof AppError) {
-        // se for um erro do lado do cliente
         return response.status(400).json({ message: error.message });
       }
 
-      // Caso contrário, envie um erro interno do servidor
       return response.status(500).json({ message: "Erro interno do servidor" });
     }
   }
@@ -91,62 +80,27 @@ class PratosController {
     }
   }
   async index(request, response) {
-    const { name, ingredientes } = request.query;
+    const { name } = request.query;
 
     let pratos;
     pratos = await knex("pratos")
       .whereLike("name", `%${name}%`)
       .orderBy("name");
 
-    // pratos = await knex("pratos")
-    //   .select([
-    //     "pratos.name",
-    //     "pratos.value",
-    //     "pratos.category",
-    //     "pratos.imageUrl",
-    //     "pratos.description",
-    //   ])
-    //   .whereLike("pratos.name", `%${name}%`);
-
-    // if (ingredientes) {
-    //   const filterIngredientes = ingredientes
-    //     .split(",")
-    //     .map((ingrediente) => ingrediente.trim());
-
-    //   pratos = await knex("ingredients")
-    //     .select([
-    //       "pratos.name",
-    //       "pratos.value",
-    //       "pratos.category",
-    //       "pratos.imageUrl",
-    //       "pratos.description",
-    //     ])
-    //     .whereLike("pratos.name", `%${name}%`)
-    // .whereIn("name", filterIngredientes)
-    //     .innerJoin("pratos", "pratos.id", "ingredientes.prato_id")
-    //     .orderBy("name");
-    // } else {
-    //   pratos = (await knex("pratos"))
-    //     .whereLike("name", `%${name}%`)
-    //     .orderBy("name");
-    // }
-
     return response.json({ pratos });
   }
 
   async update(request, response) {
     const { name, category, value, description, ingredientes } = request.body;
-    const image = request.file ? request.file.filename : null; // Verifica se há uma nova imagem
+    const image = request.file ? request.file.filename : null;
     const { prato_id } = request.params;
 
-    const prato = await knex("pratos").where({ id: prato_id }).first(); // Busca o prato
-
+    const prato = await knex("pratos").where({ id: prato_id }).first();
     if (!prato) {
       return response.status(404).json({ message: "Prato não encontrado" });
     }
 
     if (image) {
-      // Se houver uma nova imagem, exclui a antiga e salva a nova
       await diskStorage.deleteFile(prato.imageUrl);
       const imageUrl = await diskStorage.saveFile(image);
       prato.imageUrl = imageUrl;
@@ -164,7 +118,6 @@ class PratosController {
       await knex("ingredientes").insert(ingredientesInsert);
     }
 
-    // Atualiza os demais campos
     if (name) prato.name = name;
     if (value) prato.value = value;
     if (description) prato.description = description;

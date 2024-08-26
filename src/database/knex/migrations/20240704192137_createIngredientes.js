@@ -1,12 +1,11 @@
 exports.up = (knex) =>
   knex.schema.createTable("ingredientes", (table) => {
-    table.increments("id").primary(); // cria o id da nota
+    table.increments("id").primary();
     table
       .integer("prato_id")
       .references("id")
       .inTable("pratos")
-      .onDelete("CASCADE"); // pega o id do usuário que criou a nota
-
+      .onDelete("CASCADE");
     table.text("name").notNullable();
 
     table.timestamp("created_at").default(knex.fn.now());

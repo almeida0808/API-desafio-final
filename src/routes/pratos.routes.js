@@ -5,14 +5,30 @@ const uploadConfig = require("../configs/upload");
 const multer = require("multer");
 
 const PratosController = require("../Controllers/PratosController");
+const verifyUserAuthorization = require("../middlewares/verifyUserAuthorization");
 const pratosController = new PratosController();
 
 const upload = multer(uploadConfig.MULTER);
 
-pratosRoutes.post("/", upload.single("image"), pratosController.create);
+pratosRoutes.post(
+  "/",
+  verifyUserAuthorization("admin"),
+  upload.single("image"),
+  pratosController.create
+);
 pratosRoutes.get("/:id", pratosController.show);
-pratosRoutes.put("/:prato_id", upload.single("image"), pratosController.update);
-pratosRoutes.delete("/:id", pratosController.delete);
+pratosRoutes.put(
+  "/:prato_id",
+  verifyUserAuthorization("admin"),
+  upload.single("image"),
+  pratosController.update
+);
+
+pratosRoutes.delete(
+  "/:id",
+  verifyUserAuthorization("admin"),
+  pratosController.delete
+);
 pratosRoutes.get("/", pratosController.index);
 pratosRoutes.patch("/img-food", upload.single("image"), (req, res) => {
   console.log(req.file.filename);

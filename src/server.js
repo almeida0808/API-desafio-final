@@ -1,4 +1,5 @@
 require("express-async-errors");
+require("dotenv/config");
 const AppError = require("./utils/AppError");
 
 const database = require("./database/sqlite");
@@ -34,5 +35,5 @@ app.use((error, request, response, next) => {
 
 database();
 
-const PORT = 2211;
+const PORT = process.env.PORT || 7777;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
